@@ -7,11 +7,23 @@ const bodyParser = require('body-parser');
 const postsRoute = require('./routes/posts');
 const authRoute = require('./routes/auth');
 const postRoute = require('./routes/posts')
+const cookieParser = require('cookie-parser');
+const verifyToken = require('./verifytoken/verifytoken');
+const cors = require('cors');
+const MongoClient = require('mongodb').MongoClient;
+
+const corsOptions = {
+    origin: '*',
+    credentials: true };
+
 
 //middlewares
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use('/api/user', authRoute);
+app.use(cookieParser());
+app.use('/api/', authRoute);
 app.use('/api/posts', postRoute)
+
 
 
 

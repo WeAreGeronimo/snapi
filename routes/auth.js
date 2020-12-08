@@ -4,6 +4,10 @@ const jwt = require('jsonwebtoken')
 const {registerValidation, loginValidation} = require('../validation/validation')
 const Joi = require('@hapi/joi');
 const bcrypt = require('bcryptjs');
+const verifyToken = require("../verifytoken/verifytoken");
+const MongoClient = require('mongodb').MongoClient;
+require('dotenv/config');
+
 
 
 
@@ -31,12 +35,19 @@ router.post('/register', async (req, res) => {
     const user = new User ({
         email: req.body.email,
         password: hashedPassword,
-        repeat_password: req.body.repeat_password
+        name: req.body.name,
+        surname: req.body.surname,
+        sex: req.body.sex
     })
 
     try {
+
         const savedUser = await user.save()
-        res.send({id: savedUser.uid})
+        const token = jwt.sign({id: savedUser.uid}, process.env.TOKEN_SECRET);
+        res.cookie('authmee', token, {
+            maxAge: 86400,
+            httpOnly: true
+        }).send({id: savedUser.uid}).end();
     }catch (err){
         res.status(400).send(err)
     }
@@ -57,8 +68,36 @@ router.post('/login', async (req, res) => {
 
     //create and assign a token
     const token = jwt.sign({id: emailExist.uid}, process.env.TOKEN_SECRET);
-    res.header('auth-token', token).send(token);
+
+
+    res.cookie('authmee', token, {
+        maxAge: 86400,
+        httpOnly: true
+    }).send({id: emailExist.uid}).end();
+    // res.header('auth-token', token).send(token);
 });
+
+
+router.get('/auth/me', verifyToken, async (req, res) => {
+
+    const token = req.cookies.authmee
+    const decrypt = await jwt.verify(token, process.env.TOKEN_SECRET);
+    req.user = {
+        id: decrypt.id,
+    };
+    MongoClient.connect(process.env.DB_CONNECTION, function(err, db) {
+        if (err) throw err;
+        const dbo = db.db("db");
+        //Find the first document in the customers collection:
+        dbo.collection("users").findOne({uid: req.user.id}, function(err, result) {
+            if (err) throw err;
+            res.status(200).send({id: result.uid, email: result.email, name: result.name});
+            db.close();
+        });
+    });
+});
+
+
 
 // router.post('/login')
 module.exports = router;
