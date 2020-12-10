@@ -51,14 +51,18 @@ const userSchema = new mongoose.Schema({
         max: 15,
         default: undefined
     },
-    status: {
-        type: String,
-        max: 140,
-        default: undefined,
-        when: {
+    status:  {
+        statusText: {
+            type: String,
+            max: 140,
+            default: undefined,
+        },
+        timeCreation: {
             type: String,
             default: undefined
         },
+
+    },
     location:{
     hometown: {
         type: String,
@@ -124,7 +128,8 @@ const userSchema = new mongoose.Schema({
     posts: [],
     dialogs: [],
     notes: [],
-    },
+
+
     });
 
 const userMAI = connection.model('user', userSchema);

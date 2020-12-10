@@ -7,26 +7,64 @@ const bodyParser = require('body-parser');
 const postsRoute = require('./routes/posts');
 const authRoute = require('./routes/auth');
 const postRoute = require('./routes/posts')
-const cookieParser = require('cookie-parser');
-const verifyToken = require('./verifytoken/verifytoken');
+const profileRoute = require('./routes/profile')
 const cors = require('cors');
-const MongoClient = require('mongodb').MongoClient;
+const session = require('express-session');
+const MongoStore = require('connect-mongo')(session);
+const twoHours = 1000 * 60 * 60 * 2
+//connect to db
 
-const corsOptions = {
-    origin: '*',
-    credentials: true };
+
+const options = {
+    origin: "http://react.app.com:3000",
+    credentials: true,
+    maxAge: 86500
+}
+
+app.use(cors(options));
+// app.use((req,res,next) => {
+//
+//     res.header("Access-Control-Allow-Origin", "http://react.app.com:3000");
+//     res.header("Access-Control-Allow-Credentials", "true");
+//      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+//      res.header("Access-Control-Allow-Methods", 'PUT, POST, PATCH, DELETE, GET');
+//     if(req.method === 'OPTIONS') {
+//
+//         res.header("Access-Control-Allow-Origin", "http://react.app.com:3000");
+//         res.header("Access-Control-Allow-Credentials", "true");
+//         res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+//         res.header("Access-Control-Allow-Methods", 'PUT, POST, PATCH, DELETE, GET');
+//         return res.status(200).json({})
+//     }next();
+// })
 
 
 //middlewares
-app.use(cors(corsOptions));
+
+
+
+
+app.use(session({
+        secret: 'verysecretkey',
+        secure: false,
+        resave: false,
+        saveUninitialized: false,
+        store: new MongoStore({mongooseConnection: mongoose.connection, collection: "storedSessions"}),
+        cookie: {
+            maxAge: twoHours,
+            secure: false
+        }}))
+
 app.use(express.json());
-app.use(cookieParser());
 app.use('/api/', authRoute);
 app.use('/api/posts', postRoute)
+app.use('/profile/', profileRoute)
 
 
-
-
+app.get('/road', (req,res) => {
+    req.session.on = true
+    res.send('done')
+})
 
 app.get('/', (req, res) => {
     res.send('we are on home');
@@ -34,10 +72,9 @@ app.get('/', (req, res) => {
 
 
 
-//connect to db
 mongoose.connect(process.env.DB_CONNECTION, {useNewUrlParser: true},() => {
     console.log('connected')
 })
 
 
-app.listen(2222);
+app.listen(2222, 'api.app.com');
