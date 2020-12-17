@@ -14,34 +14,40 @@ const jwt = require('jsonwebtoken');
 //   }
 // }
 
-
-
 const verifySession = async (req, res, next) => {
+  const verifySession = req.session.userId;
 
-    const verifySession = req.session.userId
-
-    try { if (!verifySession) {
-        return res.status(200).send({apiData:{}, resultCode: 1, message: "Invalid Session"})
+  try {
+    if (!verifySession) {
+      return res.status(200).send({
+        apiData: {},
+        resultCode: 1,
+        message: 'Invalid Session',
+      });
     }
-
-    }catch (err){
-        return res.status(200).send({apiData:{}, resultCode: 1, message: "Invalid Session"});
-    } next()
-    // const token = req.cookies.authmee || '';
-    // try {
-    //     if (!token) {
-    //         return res.status(200).send({apiData:{}, resultCode: 1, message: "Invalid Token"})
-    //     }
-    //     const decrypt = await jwt.verify(token, process.env.TOKEN_SECRET);
-    //     req.user = {
-    //         id: decrypt.uid,
-    //         email: decrypt.email,
-    //         name: decrypt.name
-    //     };
-    //     next();
-    // } catch (err) {
-    //     return res.status(200).send({apiData:{}, resultCode: 1, message: "Invalid Token"});
-    // }
+  } catch (err) {
+    return res.status(200).send({
+      apiData: {},
+      resultCode: 1,
+      message: 'Invalid Session',
+    });
+  }
+  next();
+  // const token = req.cookies.authmee || '';
+  // try {
+  //     if (!token) {
+  //         return res.status(200).send({apiData:{}, resultCode: 1, message: "Invalid Token"})
+  //     }
+  //     const decrypt = await jwt.verify(token, process.env.TOKEN_SECRET);
+  //     req.user = {
+  //         id: decrypt.uid,
+  //         email: decrypt.email,
+  //         name: decrypt.name
+  //     };
+  //     next();
+  // } catch (err) {
+  //     return res.status(200).send({apiData:{}, resultCode: 1, message: "Invalid Token"});
+  // }
 };
 
 module.exports = verifySession;

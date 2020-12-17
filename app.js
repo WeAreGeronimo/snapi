@@ -6,20 +6,19 @@ require('dotenv/config');
 const bodyParser = require('body-parser');
 const postsRoute = require('./routes/posts');
 const authRoute = require('./routes/auth');
-const postRoute = require('./routes/posts')
-const profileRoute = require('./routes/profile')
+const postRoute = require('./routes/posts');
+const profileRoute = require('./routes/profile');
 const cors = require('cors');
 const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
-const twoHours = 1000 * 60 * 60 * 2
+const threeDays = 1000 * 60 * 60 * 72;
 //connect to db
 
-
 const options = {
-    origin: "http://react.app.com:3000",
-    credentials: true,
-    maxAge: 86500
-}
+  origin: 'http://react.app.com:3000',
+  credentials: true,
+  maxAge: 86500,
+};
 
 app.use(cors(options));
 // app.use((req,res,next) => {
@@ -38,43 +37,46 @@ app.use(cors(options));
 //     }next();
 // })
 
+// middlewares
 
-//middlewares
-
-
-
-
-app.use(session({
-        secret: 'verysecretkey',
-        secure: false,
-        resave: false,
-        saveUninitialized: false,
-        store: new MongoStore({mongooseConnection: mongoose.connection, collection: "storedSessions"}),
-        cookie: {
-            maxAge: twoHours,
-            secure: false
-        }}))
+app.use(
+  session({
+    secret: process.env.SECRET,
+    secure: false,
+    resave: false,
+    saveUninitialized: false,
+    store: new MongoStore({
+      mongooseConnection: mongoose.connection,
+      collection: 'storedSessions',
+    }),
+    cookie: {
+      maxAge: threeDays,
+      secure: false,
+    },
+  }),
+);
 
 app.use(express.json());
 app.use('/api/', authRoute);
-app.use('/api/posts', postRoute)
-app.use('/profile/', profileRoute)
+app.use('/api/posts', postRoute);
+app.use('/profile/', profileRoute);
 
-
-app.get('/road', (req,res) => {
-    req.session.on = true
-    res.send('done')
-})
-
-app.get('/', (req, res) => {
-    res.send('we are on home');
+app.get('/road', (req, res) => {
+  req.session.on = true;
+  res.send('done');
 });
 
+app.get('/', (req, res) => {
+  res.send('we are on home');
+});
 
-
-mongoose.connect(process.env.DB_CONNECTION, {useNewUrlParser: true},() => {
-    console.log('connected')
-})
-
+mongoose.connect(
+  process.env.DB_CONNECTION,
+  { useFindAndModify: false },
+  { useNewUrlParser: true },
+  () => {
+    console.log('connected');
+  },
+);
 
 app.listen(2222, 'api.app.com');

@@ -8,37 +8,36 @@ const connection = mongoose.createConnection(
 );
 autoIncrement.initialize(connection);
 
-const postSchema = new mongoose.Schema({
+const commentSchema = new mongoose.Schema({
   from: {
-    type: Number,
+    type: String,
+    max: 200,
     default: undefined,
   },
-  postId: {
-    type: { type: Number, ref: 'postId' },
+  commentId: {
+    type: { type: Number, ref: 'commentId' },
   },
   whenTime: {
     type: String,
     max: 200,
     default: undefined,
   },
-  text: {
+  textComment: {
     type: String,
-    max: 3000,
+    max: 2000,
+    default: undefined,
   },
-  likes: [{ type: Number }],
-
-  comments: [
-    { type: mongoose.Schema.Types.ObjectId, ref: 'CommentsPost' },
-  ],
+  likesCom: {
+    type: Number,
+  },
 });
 
-// eslint-disable-next-line no-undef
-postSchema.plugin(autoIncrement.plugin, {
-  model: 'WallPosts',
-  field: 'postId',
+commentSchema.plugin(autoIncrement.plugin, {
+  model: 'CommentsPost',
+  field: 'commentId',
   startAt: 1,
   incrementBy: 1,
 });
 
-const WallPosts = mongoose.model('WallPosts', postSchema);
-module.exports = WallPosts;
+const CommentsPost = mongoose.model('CommentsPost', commentSchema);
+module.exports = CommentsPost;
