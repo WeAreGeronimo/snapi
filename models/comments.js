@@ -27,9 +27,7 @@ const commentSchema = new mongoose.Schema({
     max: 2000,
     default: undefined,
   },
-  likesCom: {
-    type: Number,
-  },
+  likes: [{ type: Number }],
 });
 
 commentSchema.plugin(autoIncrement.plugin, {
