@@ -10,8 +10,7 @@ autoIncrement.initialize(connection);
 
 const commentSchema = new mongoose.Schema({
   from: {
-    type: String,
-    max: 200,
+    type: Number,
     default: undefined,
   },
   commentId: {

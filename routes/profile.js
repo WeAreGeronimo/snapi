@@ -16,56 +16,140 @@ router.get('/:id', async (req, res) => {
     .exec(function (err, data) {
       if (err) throw err;
       const result = data.posts;
-      const idsWithNames = [];
+      const idsWithNamesFromPosts = [];
+      const idsWithNamesFromComments = [];
       const correctPosts = [];
+      let ArrayOfComments = [];
       const findedUsers = [];
-      const allIds = [];
+      const findedComments = [];
+      const allIdsFromPosts = [];
+      const allIdsFromComments = [];
+      // eslint-disable-next-line array-callback-return
       result.map((post) => {
-        return allIds.push(post.from);
+        findedComments.push(post.comments);
+        allIdsFromPosts.push(post.from);
+        if (post.comments.length !== 0) {
+          post.comments.map((commentsEl) => {
+            return allIdsFromComments.push(commentsEl.from);
+          });
+        }
       });
-      const arrayOfIdsWithoutDuplicates = Array.from(new Set(allIds));
+      const arrayOfIdsWithoutDuplicatesFromComments = Array.from(
+        new Set(allIdsFromComments),
+      );
+      const arrayOfIdsWithoutDuplicatesFromPosts = Array.from(
+        new Set(allIdsFromPosts),
+      );
+      const allIds = arrayOfIdsWithoutDuplicatesFromPosts.concat(
+        arrayOfIdsWithoutDuplicatesFromComments,
+      );
+      const allIdsWithoutDup = Array.from(new Set(allIds));
       Promise.all(
-        arrayOfIdsWithoutDuplicates.map(async (el) => {
+        allIdsWithoutDup.map(async (el) => {
           findedUsers.push(await User.findOne({ uid: el }));
         }),
       ).then(() => {
-        for (let i = 0; i < findedUsers.length; i++) {
+        for (let i = 0; i < findedUsers.length; i += 1) {
           for (
             let j = 0;
-            j < arrayOfIdsWithoutDuplicates.length;
-            j++
+            j < arrayOfIdsWithoutDuplicatesFromPosts.length;
+            j += 1
           ) {
             if (
-              findedUsers[i].uid === arrayOfIdsWithoutDuplicates[j]
+              findedUsers[i].uid ===
+              arrayOfIdsWithoutDuplicatesFromPosts[j]
             ) {
-              idsWithNames.push({
+              idsWithNamesFromPosts.push({
                 name: findedUsers[i].name,
                 nickname: findedUsers[i].nickname,
                 surname: findedUsers[i].surname,
-                idForSearch: arrayOfIdsWithoutDuplicates[j],
+                idForSearch: arrayOfIdsWithoutDuplicatesFromPosts[j],
+              });
+            }
+          }
+          for (
+            let j = 0;
+            j < arrayOfIdsWithoutDuplicatesFromComments.length;
+            j += 1
+          ) {
+            if (
+              findedUsers[i].uid ===
+              arrayOfIdsWithoutDuplicatesFromComments[j]
+            ) {
+              idsWithNamesFromComments.push({
+                name: findedUsers[i].name,
+                nickname: findedUsers[i].nickname,
+                surname: findedUsers[i].surname,
+                idForSearch:
+                  arrayOfIdsWithoutDuplicatesFromComments[j],
               });
             }
           }
         }
-        for (let i = 0; i < result.length; i++) {
+
+        const CommentsArrayWithNames = [];
+        let CommentsWithNames = [];
+        const clearArrayComments = [];
+
+        for (let i = 0; i < findedComments.length; i++) {
+          if (findedComments[i].length !== 0) {
+            findedComments[i].map((el) => {
+              ArrayOfComments.push({
+                commentId: el.commentId,
+                likes: el.likes,
+                textComment: el.textComment,
+                from: el.from,
+                whenTime: el.whenTime,
+              });
+            });
+            clearArrayComments.push(ArrayOfComments);
+            ArrayOfComments = [];
+          } else if (findedComments[i].length === 0) {
+            clearArrayComments.push([]);
+            ArrayOfComments = [];
+          }
+        }
+
+        for (let i = 0; i < idsWithNamesFromComments.length; i += 1) {
+          for (let j = 0; j < clearArrayComments.length; j += 1) {
+            if (clearArrayComments[j].length !== 0) {
+              CommentsWithNames = [];
+              clearArrayComments[j].map((el) => {
+                if (
+                  el.from === idsWithNamesFromComments[i].idForSearch
+                ) {
+                  CommentsWithNames.push({
+                    ...el,
+                    ...idsWithNamesFromComments[i],
+                  });
+                }
+              });
+              CommentsArrayWithNames.push(CommentsWithNames);
+            } else if (clearArrayComments[j].length === 0) {
+              CommentsArrayWithNames.push([]);
+            }
+          }
+        }
+        for (let i = 0; i < result.length; i += 1) {
           correctPosts.push({
             postId: result[i].postId,
             likes: result[i].likes,
-            comments: result[i].comments,
+            comments: CommentsArrayWithNames[i],
             from: result[i].from,
             whenTime: result[i].whenTime,
             text: result[i].text,
           });
         }
         const finalArray = [];
-        for (let i = 0; i < idsWithNames.length; i++) {
-          for (let j = 0; j < correctPosts.length; j++) {
+        for (let i = 0; i < idsWithNamesFromPosts.length; i += 1) {
+          for (let j = 0; j < correctPosts.length; j += 1) {
             if (
-              idsWithNames[i].idForSearch === correctPosts[j].from
+              idsWithNamesFromPosts[i].idForSearch ===
+              correctPosts[j].from
             ) {
               finalArray.push({
                 ...correctPosts[j],
-                ...idsWithNames[i],
+                ...idsWithNamesFromPosts[i],
               });
             }
           }
@@ -156,8 +240,8 @@ router.put('/api/newpost', verifySession, async (req, res) => {
               whenTime: result[lengthArrayPostId].whenTime,
               text: result[lengthArrayPostId].text,
             });
-            const idsWithNames = [];
-            idsWithNames.push({
+            const idsWithNamesFromPosts = [];
+            idsWithNamesFromPosts.push({
               name: finded.name,
               nickname: finded.nickname,
               surname: finded.surname,
@@ -165,7 +249,7 @@ router.put('/api/newpost', verifySession, async (req, res) => {
             const finalArray = [];
             finalArray.push({
               ...correctArray[0],
-              ...idsWithNames[0],
+              ...idsWithNamesFromPosts[0],
             });
             res.status(200).send({
               apiData: {
@@ -228,6 +312,62 @@ router.post('/api/liketogle', verifySession, async (req, res) => {
     }
   });
 });
+
+router.post(
+  '/api/comment/liketogle',
+  verifySession,
+  async (req, res) => {
+    CommentPost.find({
+      commentId: req.body.commentId,
+      likes: { $in: [req.session.userId] },
+    }).exec(function (err, results) {
+      if (err) {
+        res.send(err);
+      }
+      if (results.length !== 0) {
+        CommentPost.findOneAndUpdate(
+          { commentId: req.body.commentId },
+          {
+            $pull: { likes: req.session.userId },
+          },
+          {
+            new: true,
+          },
+        ).exec(function (err3, results3) {
+          if (err3) {
+            console.log(err3);
+          }
+          res.send({
+            apiData: {
+              likes: results3.likes,
+              commentId: results3.commentId,
+            },
+          });
+        });
+      } else if (results.length === 0) {
+        CommentPost.findOneAndUpdate(
+          { commentId: req.body.commentId },
+          {
+            $addToSet: { likes: req.session.userId },
+          },
+          {
+            new: true,
+          },
+        ).exec(function (err3, results3) {
+          if (err3) {
+            console.log(err3);
+          }
+          res.send({
+            apiData: {
+              likes: results3.likes !== null ? results3.likes : [],
+              commentId: results3.commentId,
+            },
+          });
+        });
+      }
+    });
+  },
+);
 
 router.post('/api/like', verifySession, async (req, res) => {
   WallPost.findOneAndUpdate(
@@ -296,8 +436,8 @@ router.put('/api/newcomment', verifySession, async (req, res) => {
               textComment: result[lengthArrayPostId].textComment,
               likes: result[lengthArrayPostId].likes,
             });
-            const idsWithNames = [];
-            idsWithNames.push({
+            const idsWithNamesFromPosts = [];
+            idsWithNamesFromPosts.push({
               name: finded.name,
               nickname: finded.nickname,
               surname: finded.surname,
@@ -305,7 +445,7 @@ router.put('/api/newcomment', verifySession, async (req, res) => {
             const finalArray = [];
             finalArray.push({
               ...correctArray[0],
-              ...idsWithNames[0],
+              ...idsWithNamesFromPosts[0],
             });
             res.status(200).send({
               apiData: {
@@ -319,35 +459,105 @@ router.put('/api/newcomment', verifySession, async (req, res) => {
   );
 });
 
-router.put('/test', verifySession, async (req, res) => {
-  const arrayOfPopulComments = [];
-  const ttt = await User.findOne({
-    uid: req.session.userId,
-  }).populate({
-    path: 'posts',
-    populate: { path: 'comments' },
+router.put('/api/deletecomment', verifySession, async (req, res) => {
+  await CommentPost.findOne({
+    commentId: req.body.commentId,
+  }).exec(function (err, commentPostData) {
+    if (err) throw err;
+    if (commentPostData.from === req.session.userId) {
+      WallPost.findOneAndUpdate(
+        { comments: { $in: [commentPostData._id] } },
+        {
+          $pull: { comments: commentPostData._id },
+        },
+        {
+          new: false,
+        },
+      ).exec(function (err2, wallPostData) {
+        if (err2) throw err2;
+        CommentPost.findByIdAndDelete(
+          commentPostData._id,
+          function (errDel, deleted) {
+            if (errDel) throw errDel;
+            res.send({ deletedComment: deleted });
+          },
+        );
+      });
+    } else if (commentPostData.from !== req.session.userId) {
+      res.send('Its not your comment!');
+    }
   });
-  res.send(ttt);
-  // await User.findOne({ uid: req.session.userId })
-  //   .populate('posts')
-  //   .exec(function (err, data) {
-  //     if (err) throw err;
-  //     const findedPosts = data.posts;
-  //     const arrayPostsIds = [];
-  //     data.posts.map((el) => {
-  //       arrayPostsIds.push(el.postId);
+});
+
+router.put('/test', verifySession, async (req, res) => {
+  //  del comment
+
+  // await CommentPost.findOne({
+  //   uid: req.body.commentId,
+  // }).exec(function (err, commentPostData) {
+  //   if (err) throw err;
+  //   WallPost.findOne({
+  //     comments: { $in: [commentPostData._id] },
+  //   }).exec(function (err2, wallPostData) {
+  //     if (err2) throw err;
+  //     User.findOne({
+  //       posts: { $in: [wallPostData._id] },
+  //     }).exec(function (err3, userData) {
+  //       if (err3) throw err;
+  //       res.send({ userData2: userData });
   //     });
-  //     arrayPostsIds.map(async (el) => {
-  //       await WallPost.findOne({ postId: el })
-  //         .populate('comments')
-  //         .exec(function (err2, data2) {
-  //           if (err2) throw err;
-  //           arrayOfPopulComments.push(data2);
-  //           console.log(arrayOfPopulComments);
-  //         });
-  //     });
-  //     res.send({ arrayOfPopulComments });
   //   });
+  // });
+
+  await CommentPost.findOne({
+    commentId: req.body.commentId,
+  }).exec(function (err, commentPostData) {
+    if (err) throw err;
+    if (commentPostData.from === req.session.userId) {
+      WallPost.findOneAndUpdate(
+        { comments: { $in: [commentPostData._id] } },
+        {
+          $pull: { comments: commentPostData._id },
+        },
+        {
+          new: false,
+        },
+      ).exec(function (err2, wallPostData) {
+        if (err2) throw err2;
+        CommentPost.findByIdAndDelete(
+          commentPostData._id,
+          function (errDel, deleted) {
+            if (errDel) throw errDel;
+            res.send({ deletedComment: deleted });
+          },
+        );
+      });
+    } else if (commentPostData.from !== req.session.userId) {
+      res.send('Its not your comment!');
+    }
+  });
+
+  // await CommentPost.findOne({
+  //   commentId: req.body.commentId,
+  // }).exec(function (err, commentPostData) {
+  //   if (err) throw err;
+  //   if (commentPostData.from === req.session.userId) {
+  //     WallPost.findOne({
+  //       comments: { $in: [commentPostData._id] },
+  //     }).exec(function (err2, wallPostData) {
+  //       if (err2) throw err2;
+  //       CommentPost.findByIdAndDelete(
+  //         commentPostData._id,
+  //         function (errDel, deleted) {
+  //           if (errDel) throw errDel;
+  //           res.send({ deletedComment: deleted });
+  //         },
+  //       );
+  //     });
+  //   } else if (commentPostData.from !== req.session.userId) {
+  //     res.send('Its not your comment!');
+  //   }
+  // });
 });
 
 module.exports = router;
